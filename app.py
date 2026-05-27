@@ -1,25 +1,31 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, jsonify, send_file
 import pandas as pd
 import re
 import io
-import base64
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 app = Flask(__name__)
 
+# Almacenamiento temporal
+archivos = {}
+
+@app.route('/subir/<nombre>', methods=['POST'])
+def subir(nombre):
+    if 'file' not in request.files:
+        return jsonify({'error': 'no file'}), 400
+    archivos[nombre] = request.files['file'].read()
+    return jsonify({'ok': True, 'recibido': nombre, 'total': list(archivos.keys())})
+
 @app.route('/procesar', methods=['POST'])
 def procesar():
-    raw = request.get_data(as_text=True)
-    print('RAW BODY:', raw[:200] if raw else 'VACIO')
-    print('CONTENT TYPE:', request.content_type)
-    
-    data = request.get_json(force=True, silent=True)
-    if not data:
-        return {'error': 'no data', 'raw': raw[:200]}, 400
-    
-    mayor_bytes = base64.b64decode(data['Mayor_fumi'])
+    if not all(k in archivos for k in ['mayor', 'items', 'aplic']):
+        return jsonify({'error': 'faltan archivos', 'recibidos': list(archivos.keys())}), 400
+
+    mayor_bytes = archivos['mayor']
+    items_bytes = archivos['items']
+    aplic_bytes = archivos['aplic']
 
     # ── 1. MAYOR FUMI ─────────────────────────────────────────────────────────
     df_mayor = pd.read_excel(io.BytesIO(mayor_bytes), header=4)
@@ -139,9 +145,12 @@ def procesar():
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
-    excel_b64 = base64.b64encode(output.read()).decode('utf-8')
+    archivos.clear()
 
-    return {'file': excel_b64, 'filename': 'Detalle_Fumigaciones.xlsx'}
+    return send_file(output,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     as_attachment=True,
+                     download_name='Detalle_Fumigaciones.xlsx')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
