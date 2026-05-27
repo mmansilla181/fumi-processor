@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 @app.route('/procesar', methods=['POST'])
 def procesar():
-    data = request.get_json()
+    data = request.get_json(force=True)
     print('KEYS RECIBIDAS:', list(data.keys()) if data else 'SIN DATA')
     print('CONTENT TYPE:', request.content_type)
     
