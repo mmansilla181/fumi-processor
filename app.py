@@ -11,9 +11,13 @@ app = Flask(__name__)
 
 @app.route('/procesar', methods=['POST'])
 def procesar():
-    data = request.get_json(force=True)
-    print('KEYS RECIBIDAS:', list(data.keys()) if data else 'SIN DATA')
+    raw = request.get_data(as_text=True)
+    print('RAW BODY:', raw[:200] if raw else 'VACIO')
     print('CONTENT TYPE:', request.content_type)
+    
+    data = request.get_json(force=True, silent=True)
+    if not data:
+        return {'error': 'no data', 'raw': raw[:200]}, 400
     
     mayor_bytes = base64.b64decode(data['Mayor_fumi'])
 
