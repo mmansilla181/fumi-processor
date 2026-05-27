@@ -2,6 +2,7 @@ from flask import Flask, request, send_file
 import pandas as pd
 import re
 import io
+import base64
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -10,9 +11,11 @@ app = Flask(__name__)
 
 @app.route('/procesar', methods=['POST'])
 def procesar():
-    mayor_bytes = request.files['Mayor_fumi'].read()
-    items_bytes = request.files['detalle_items_manuales'].read()
-    aplic_bytes = request.files['detalle_aplicaciones'].read()
+    data = request.get_json()
+
+    mayor_bytes = base64.b64decode(data['Mayor_fumi'])
+    items_bytes = base64.b64decode(data['detalle_items_manuales'])
+    aplic_bytes = base64.b64decode(data['detalle_aplicaciones'])
 
     # ── 1. MAYOR FUMI ─────────────────────────────────────────────────────────
     df_mayor = pd.read_excel(io.BytesIO(mayor_bytes), header=4)
@@ -132,9 +135,9 @@ def procesar():
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
+    excel_b64 = base64.b64encode(output.read()).decode('utf-8')
 
-    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                     as_attachment=True, download_name='Detalle_Fumigaciones.xlsx')
+    return {'file': excel_b64, 'filename': 'Detalle_Fumigaciones.xlsx'}
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
