@@ -12,10 +12,10 @@ app = Flask(__name__)
 @app.route('/procesar', methods=['POST'])
 def procesar():
     data = request.get_json()
-
+    print('KEYS RECIBIDAS:', list(data.keys()) if data else 'SIN DATA')
+    print('CONTENT TYPE:', request.content_type)
+    
     mayor_bytes = base64.b64decode(data['Mayor_fumi'])
-    items_bytes = base64.b64decode(data['detalle_items_manuales'])
-    aplic_bytes = base64.b64decode(data['detalle_aplicaciones'])
 
     # ── 1. MAYOR FUMI ─────────────────────────────────────────────────────────
     df_mayor = pd.read_excel(io.BytesIO(mayor_bytes), header=4)
