@@ -13,9 +13,10 @@ archivos = {}
 
 @app.route('/subir/<nombre>', methods=['POST'])
 def subir(nombre):
-    if 'file' not in request.files:
-        return jsonify({'error': 'no file'}), 400
-    archivos[nombre] = request.files['file'].read()
+   if len(request.files) == 0:
+    return jsonify({'error': 'no file'}), 400
+archivo = list(request.files.values())[0]
+archivos[nombre] = archivo.read()
     return jsonify({'ok': True, 'recibido': nombre, 'total': list(archivos.keys())})
 
 @app.route('/procesar', methods=['POST'])
